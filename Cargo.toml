@@ -1,0 +1,35 @@
+[package]
+name = "img2avif"
+version = "1.0.0"
+edition = "2021"
+description = "Convert images to AVIF format with advanced quality settings"
+authors = ["Philippe TEMESI <philippe@tems.be>"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/temsi/img2avif"
+homepage = "https://www.tems.be"
+keywords = ["avif", "image", "converter", "compression"]
+categories = ["command-line-utilities", "multimedia::images"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+image = { version = "0.25", default-features = false, features = [
+    "jpeg", "png", "bmp", "gif", "ico", "tiff", "webp"
+] }
+ravif = "0.11"
+rgb = "0.8"
+bytemuck = { version = "1.14", features = ["derive"] }
+thiserror = "1.0"
+walkdir = "2.5"
+indicatif = "0.17"
+
+[dev-dependencies]
+tempfile = "3.8"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+split-debuginfo = "packed"
+strip = true
+incremental = true
