@@ -5,6 +5,8 @@ mod config;
 mod converter;
 mod processor;
 mod error;
+mod raw_decoder;
+mod exif;
 
 use config::Config;
 use processor::ImageProcessor;
@@ -20,7 +22,7 @@ fn main() {
     if !config.quiet {
         println!("🖼️  img2avif v{}", env!("CARGO_PKG_VERSION"));
         println!("   © 2026 Philippe TEMESI - https://www.tems.be");
-        println!("   Supported formats: JPEG, PNG, BMP, GIF, TIFF, WebP, ICO");
+        println!("   Supported formats: JPEG, PNG, BMP, GIF, TIFF, WebP, ICO, RAW (NEF, CR2, ARW, DNG, etc.)");
         println!();
     }
 

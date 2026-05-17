@@ -17,9 +17,29 @@ impl ImageProcessor {
         let converter = Converter::from_config(&config);
         
         let supported_extensions = vec![
+            // Formats standard
             "jpg".to_string(), "jpeg".to_string(), "png".to_string(), 
             "bmp".to_string(), "gif".to_string(), "tiff".to_string(), 
-            "tif".to_string(), "webp".to_string(), "ico".to_string()
+            "tif".to_string(), "webp".to_string(), "ico".to_string(),
+            // Formats RAW
+            "nef".to_string(), "nrw".to_string(),  // Nikon
+            "cr2".to_string(), "cr3".to_string(), "crw".to_string(),  // Canon
+            "arw".to_string(), "srf".to_string(), "sr2".to_string(),  // Sony
+            "raf".to_string(),  // Fujifilm
+            "orf".to_string(),  // Olympus
+            "rw2".to_string(),  // Panasonic
+            "pef".to_string(),  // Pentax
+            "x3f".to_string(),  // Sigma
+            "dng".to_string(), "raw".to_string(), "rwl".to_string(),  // Leica/DNG
+            "mrw".to_string(),  // Minolta
+            "dcr".to_string(), "kdc".to_string(),  // Kodak
+            "3fr".to_string(), "ari".to_string(), "bay".to_string(),
+            "cap".to_string(), "data".to_string(), "dcs".to_string(),
+            "drf".to_string(), "erf".to_string(), "fff".to_string(),
+            "iiq".to_string(), "mef".to_string(), "mos".to_string(),
+            "mdc".to_string(), "obm".to_string(), "ptx".to_string(),
+            "pxn".to_string(), "qtk".to_string(), "rdc".to_string(),
+            "srw".to_string(), "sti".to_string(), "rwz".to_string()
         ];
         
         Self {

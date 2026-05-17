@@ -1,5 +1,6 @@
 use crate::error::{ConversionError, Result};
-use crate::config::{Config, ColorSpaceArg, BitDepthArg};
+use crate::config::{Config, ColorSpaceArg, BitDepthArg, RotateArg};
+use crate::raw_decoder::RawDecoder;
 use image::{DynamicImage, ImageReader};
 use ravif::{Encoder, Img, ColorModel, BitDepth};
 use rgb::{RGB8, RGBA8};
@@ -17,6 +18,12 @@ pub struct Converter {
     keep_metadata: bool,
     quiet: bool,
     verbose: bool,
+    // Paramètres RAW
+    raw_params: crate::config::RawParams,
+    // Paramètres de rotation
+    rotate: RotateArg,
+    // Preset utilisé (pour affichage)
+    preset: crate::config::PresetArg,
 }
 
 impl Converter {
@@ -32,6 +39,9 @@ impl Converter {
             keep_metadata: config.keep_metadata,
             quiet: config.quiet,
             verbose: config.verbose,
+            raw_params: config.get_raw_params(),
+            rotate: config.rotate,
+            preset: config.preset,
         }
     }
 
@@ -40,14 +50,69 @@ impl Converter {
             println!("   Loading: {}", path.display());
         }
         
-        let img = ImageReader::open(path)
-            .map_err(ConversionError::Io)?
-            .with_guessed_format()
-            .map_err(|e| ConversionError::ImageDecode(e.to_string()))?
-            .decode()
-            .map_err(|e| ConversionError::ImageDecode(e.to_string()))?;
+        // Charger l'image (RAW ou standard)
+        let img = if RawDecoder::is_raw_file(path) {
+            if self.verbose {
+                println!("   Detected RAW format, using rawloader");
+                println!("   Preset: {:?}", self.preset);
+                println!("   {}", self.raw_params.to_string());
+            }
+            RawDecoder::decode_raw_with_params(path, &self.raw_params)?
+        } else {
+            ImageReader::open(path)
+                .map_err(ConversionError::Io)?
+                .with_guessed_format()
+                .map_err(|e| ConversionError::ImageDecode(e.to_string()))?
+                .decode()
+                .map_err(|e| ConversionError::ImageDecode(e.to_string()))?
+        };
         
-        Ok(img)
+        // Appliquer la rotation
+        let rotated = self.apply_rotation(img, path)?;
+        
+        Ok(rotated)
+    }
+
+    /// Applique la rotation selon la configuration
+    fn apply_rotation(&self, img: DynamicImage, path: &Path) -> Result<DynamicImage> {
+        let rotated = match self.rotate {
+            RotateArg::Auto => {
+                match crate::exif::get_orientation(path) {
+                    Ok(orientation) => {
+                        if self.verbose && orientation != 1 {
+                            println!("   Orientation: {} -> applying rotation", orientation);
+                        }
+                        crate::exif::apply_rotation(&img, orientation)
+                    }
+                    Err(e) => {
+                        if self.verbose {
+                            println!("   Could not read orientation: {}, keeping as is", e);
+                        }
+                        img.clone()
+                    }
+                }
+            }
+            RotateArg::None => {
+                if self.verbose {
+                    println!("   Rotation disabled by user");
+                }
+                img.clone()
+            }
+            _ => {
+                if self.verbose {
+                    println!("   Applying manual rotation: {:?}", self.rotate);
+                }
+                crate::exif::apply_manual_rotation(&img, self.rotate)
+            }
+        };
+        
+        if self.verbose && rotated.width() != img.width() {
+            println!("   Rotated: {}x{} -> {}x{}", 
+                     img.width(), img.height(), 
+                     rotated.width(), rotated.height());
+        }
+        
+        Ok(rotated)
     }
 
     fn get_file_size(&self, path: &Path) -> Result<u64> {
