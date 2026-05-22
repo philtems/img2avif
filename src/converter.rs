@@ -18,12 +18,12 @@ pub struct Converter {
     keep_metadata: bool,
     quiet: bool,
     verbose: bool,
-    // Paramètres RAW
-    raw_params: crate::config::RawParams,
-    // Paramètres de rotation
     rotate: RotateArg,
-    // Preset utilisé (pour affichage)
-    preset: crate::config::PresetArg,
+    // Paramètres RAW
+    raw_exposure: String,
+    raw_percentile: f32,
+    raw_saturation: String,
+    raw_contrast: f32,
 }
 
 impl Converter {
@@ -39,9 +39,11 @@ impl Converter {
             keep_metadata: config.keep_metadata,
             quiet: config.quiet,
             verbose: config.verbose,
-            raw_params: config.get_raw_params(),
             rotate: config.rotate,
-            preset: config.preset,
+            raw_exposure: config.raw_exposure.clone(),
+            raw_percentile: config.raw_percentile,
+            raw_saturation: config.raw_saturation.clone(),
+            raw_contrast: config.raw_contrast,
         }
     }
 
@@ -53,11 +55,16 @@ impl Converter {
         // Charger l'image (RAW ou standard)
         let img = if RawDecoder::is_raw_file(path) {
             if self.verbose {
-                println!("   Detected RAW format, using rawloader");
-                println!("   Preset: {:?}", self.preset);
-                println!("   {}", self.raw_params.to_string());
+                println!("   Detected RAW format");
             }
-            RawDecoder::decode_raw_with_params(path, &self.raw_params)?
+            RawDecoder::decode_raw_with_options(
+                path, 
+                &self.raw_exposure, 
+                self.raw_percentile,
+                &self.raw_saturation,
+                self.raw_contrast,
+                self.verbose
+            )?
         } else {
             ImageReader::open(path)
                 .map_err(ConversionError::Io)?
@@ -121,7 +128,7 @@ impl Converter {
             .map_err(ConversionError::Io)
     }
 
-    pub fn configure_encoder(&self) -> Encoder {
+    fn configure_encoder(&self) -> Encoder {
         let mut encoder = Encoder::new();
         
         if self.lossless {
